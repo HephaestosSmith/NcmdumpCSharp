@@ -1,182 +1,172 @@
-# NcmdumpCSharp
+﻿# NcmdumpCSharp
 
-网易云音乐NCM文件解密工具 - C#版本
+網易雲音樂 NCM 檔案解密工具 — C# 版本
 
-## 简介
+## 簡介
 
-这是一个用原生C#重写的网易云音乐NCM文件解密工具，完全实现了原C++版本的所有功能，并在易用性与可维护性上做了改进（见下文“近期改进”）。
+以原生 C# 重新實作的網易雲音樂 NCM 解密工具，完整還原原 C++ 版本的所有功能，並額外提供 **WPF 圖形介面**（`NcmdumpCSharpGui`），支援批次解密、重複檔案掃描與簡繁轉換。
 
-## 功能特性
+## 功能特色
 
-- ✅ 支持NCM文件格式识别和验证
-- ✅ AES-ECB解密算法实现
-- ✅ RC4密钥盒解密算法实现
-- ✅ 自动识别输出格式（MP3/FLAC）
-- ✅ 元数据解析和修复（标题、艺术家、专辑等）
-- ✅ 专辑封面提取和嵌入
-- ✅ 批量处理支持
-- ✅ 递归目录处理
-- ✅ 跨平台支持（Windows、Linux、macOS）
+### 核心解密（CLI / 類別庫）
+- ✅ NCM 檔案格式識別與驗證（魔數檢查）
+- ✅ AES-ECB 金鑰解密
+- ✅ RC4 金鑰盒 XOR 音訊解密
+- ✅ 自動識別輸出格式（MP3 / FLAC）
+- ✅ 元數據解析與寫入（標題、藝術家、專輯）
+- ✅ 專輯封面提取與嵌入
+- ✅ 批次處理與遞迴子目錄支援
 
-## 系统要求
+### 圖形介面（NcmdumpCSharpGui）
+- 🖥️ 現代化 WPF 深色主題介面
+- ⚡ 多執行緒並行解密，可調整並行度（上限為實體核心數）
+- 🈶 簡體 → 繁體中文自動轉換（檔名、資料夾名稱、歌曲標籤）
+- 📋 即時記錄面板（自動捲動）
+- 📁 可選複製非 NCM 檔案至輸出目錄
+- 🔍 重複檔案掃描器（依元數據或檔名分組，支援勾選批次刪除）
 
-- .NET 8.0 或更高版本（建议 .NET 9）
-- Windows 10+ / Linux / macOS
+## 系統需求
 
-## 安装
+- .NET 10.0 或更高版本
+- Windows 10 / 11（圖形介面需要 Windows；CLI 跨平台）
 
-### 从源码编译
+## 安裝
+
+### 從原始碼編譯
 
 ```bash
-# 克隆项目
 git clone <repository-url>
 cd NcmdumpCSharp
 
-# 编译项目
-dotnet build -c Release
+# 編譯 CLI
+dotnet build NcmdumpCSharp -c Release
 
-# 发布（可选）
-dotnet publish -c Release -r win-x64 --self-contained true
+# 編譯 GUI
+dotnet build NcmdumpCSharpGui -c Release
+
+# 發佈 GUI（單一資料夾）
+dotnet publish NcmdumpCSharpGui -c Release -o publish
 ```
 
-### 下载预编译版本
+### 下載預編譯版本
 
-从 [Releases](https://github.com/Mioter/NcmdumpCSharp/releases) 页面下载对应平台的预编译版本（如有）。
+前往 [Releases](https://github.com/Mioter/NcmdumpCSharp/releases) 頁面下載對應平台的預編譯版本（如有提供）。
 
-## 使用方法
+## 使用方式
 
-### 命令行工具
+### 圖形介面
 
-注意: `ncmdump-csharp` 请替换为实际可执行文件名。
+執行 `NcmdumpCSharpGui.exe`，介面分為兩個索引標籤：
 
-显示帮助信息：
+**🔓 解密工具**
+1. 選擇「來源資料夾」（含 NCM 檔案）
+2. 選擇「輸出資料夾」
+3. 視需要開啟「翻譯繁體」或「複製非 NCM 檔案」
+4. 調整並行執行緒數（預設為實體核心數）
+5. 按「▶  開始」執行
+
+**🔍 重複掃描**
+1. 選擇要掃描的資料夾
+2. 按「🔍 開始掃描」
+3. 工具依元數據（標題 + 藝術家）或檔名後綴 `(1)`、`(2)` 分組重複檔案
+4. 勾選欲刪除的檔案後按「🗑 刪除已選取」
+
+### 命令列工具
+
+> 請將 `ncmdump-csharp` 替換為實際可執行檔名稱。
 
 ```bash
+# 顯示說明
 ncmdump-csharp --help
-```
 
-显示版本信息：
-
-```bash
+# 顯示版本
 ncmdump-csharp --version
+
+# 處理單一或多個檔案
+ncmdump-csharp file1.ncm file2.ncm
+
+# 處理整個目錄（遞迴）
+ncmdump-csharp -d /path/to/music -r
+
+# 指定輸出目錄
+ncmdump-csharp -d /path/to/music -r -o /path/to/output
 ```
 
-处理单个或多个文件：
-
-```bash
-ncmdump-csharp file1.ncm file2.ncm file3.ncm
-```
-
-处理指定目录下的所有 NCM 文件：
-
-```bash
-ncmdump-csharp -d /path/to/music/folder
-```
-
-递归处理目录及其子目录：
-
-```bash
-ncmdump-csharp -d /path/to/music/folder -r
-```
-
-指定输出目录（可选）：
-
-```bash
-ncmdump-csharp file1.ncm file2.ncm -o /path/to/output
-```
-
-组合使用：
-
-```bash
-ncmdump-csharp -d /path/to/music/folder -r -o /path/to/output
-```
-
-### 作为类库使用
-
-同步解密到文件：
+### 作為類別庫使用
 
 ```csharp
 using NcmdumpCSharp.Core;
 
+// 解密並寫入檔案
 using var crypt = new NeteaseCrypt("path/to/file.ncm");
 crypt.Dump("output/directory");
 crypt.FixMetadata();
 Console.WriteLine(crypt.DumpFilePath);
-```
 
-异步解密到文件：
-
-```csharp
-using NcmdumpCSharp.Core;
-
-using var crypt = new NeteaseCrypt("path/to/file.ncm");
+// 非同步版本
 await crypt.DumpAsync("output/directory");
-crypt.FixMetadata();
-Console.WriteLine(crypt.DumpFilePath);
+
+// 解密至記憶體串流
+using var ms = crypt.DumpToStream();
 ```
 
-解密到内存流：
-
-```csharp
-using NcmdumpCSharp.Core;
-
-using var crypt = new NeteaseCrypt("path/to/file.ncm");
-using var ms = crypt.DumpToStream(); // 同步
-// or
-using var ms2 = await crypt.DumpToStreamAsync(); // 异步
-```
-
-## 项目结构
+## 專案結構
 
 ```
-NcmdumpCSharp/
+NcmdumpCSharp/              ← CLI / 核心類別庫
 ├── Core/
-│   └── NeteaseCrypt.cs          # 核心解密类
+│   └── NeteaseCrypt.cs         # 核心解密類別
 ├── Crypto/
-│   ├── AesHelper.cs             # AES 解密辅助类
-│   └── Base64Helper.cs          # Base64 解码辅助类
+│   ├── AesHelper.cs            # AES 解密輔助
+│   └── Base64Helper.cs         # Base64 解碼輔助
 ├── Models/
-│   └── NeteaseMusicMetadata.cs  # 音乐元数据模型
-├── Program.cs                   # 主程序入口（CLI）
-├── NcmdumpCSharp.csproj         # 项目文件
-└── README.md                    # 说明文档
+│   └── NeteaseMusicMetadata.cs # 音樂元數據模型
+└── Program.cs                  # CLI 入口點
+
+NcmdumpCSharpGui/           ← WPF 圖形介面
+├── Converters/
+│   └── Converters.cs           # WPF 值轉換器
+├── Helpers/
+│   └── RelayCommand.cs         # ICommand 實作
+├── Models/
+│   ├── LogEntry.cs             # 記錄條目
+│   ├── ProcessOptions.cs       # 解密選項
+│   └── ProgressReport.cs       # 進度回報
+├── Services/
+│   ├── ChineseConverter.cs     # 簡繁轉換（LCMapStringEx）
+│   └── DecryptionService.cs    # 多執行緒解密服務
+├── ViewModels/
+│   ├── MainViewModel.cs        # 主視窗 ViewModel
+│   └── DuplicateScanViewModel.cs # 重複掃描 ViewModel
+├── MainWindow.xaml / .cs       # 主視窗
+└── App.xaml / .cs              # 應用程式入口
 ```
 
-## 技术实现
+## 技術細節
 
-1. 文件格式验证：检查 NCM 魔数
-2. 密钥提取与 AES-ECB 解密
-3. 构建 RC4 密钥盒并异或解密音频数据
-4. 首块数据识别输出格式（mp3/flac），默认 flac
-5. 解析元数据并在 FixMetadata 中写入标签与封面
+| 項目 | 說明 |
+|------|------|
+| 解密流程 | 魔數驗證 → AES-ECB 金鑰解密 → RC4 XOR 音訊資料 → 格式偵測 → 元數據寫入 |
+| 簡繁轉換 | Windows API `LCMapStringEx`（`LCMAP_TRADITIONAL_CHINESE`），透過 `Marshal.AllocHGlobal` 避免 NUL 截斷問題 |
+| 多執行緒 | `Parallel.ForEachAsync` + `CancellationTokenSource`，並行度上限 = `Environment.ProcessorCount / 2`（實體核心數） |
+| 重複偵測 | 優先讀取 ATL 元數據（標題 + 藝術家）；無元數據時以正規表示式去除 `(1)`、`(2)` 後綴比對檔名 |
 
-依赖库：
+### 相依套件
 
-- z440.atl.core：音频文件元数据处理
-- System.Text.Json：JSON 数据解析
-- System.CommandLine：命令行参数解析
-- System.Security.Cryptography：AES 加密算法
+- **z440.atl.core** — 音訊元數據讀寫（MP3 / FLAC / …）
+- **System.Text.Json** — JSON 解析
+- **System.CommandLine** — CLI 參數解析
+- **System.Security.Cryptography** — AES 加密演算法
 
-## 近期改进
+## 授權
 
-- CLI 易用性
-    - 新增 `--version`/`-v` 显示版本
-    - `-o/--output` 变为可选，未指定时输出到源文件同目录
-- 核心逻辑
-    - 提取公共方法：PrepareDumpBasePath、DecryptAndMaybeDetectFormat、CreateOutputStreamForFirstChunk，减少重复
-    - 修复异步写入参数类型，统一使用 `buffer.AsMemory(0, bytesRead)`
-- 代码质量
-    - 完善 XML 文档注释，补充参数、异常与返回值说明
+本專案採用與原版相同的授權條款，詳見 [LICENSE](LICENSE) 檔案。
 
-## 许可证
+## 貢獻
 
-本项目采用与原版相同的许可证。详见 [LICENSE](LICENSE) 文件。
+歡迎提交 Issue 與 Pull Request！
 
-## 贡献
+## 致謝
 
-欢迎提交 Issue 和 Pull Request！
-
-## 致谢
-
-- 感谢原C++版本的开发者 [taurusxin/ncmdump](https://github.com/taurusxin/ncmdump)
-- 感谢 [atldotnet](https://github.com/Zeugma440/atldotnet) 项目提供的音频元数据处理功能 
+- 原 C++ 版本作者：[taurusxin/ncmdump](https://github.com/taurusxin/ncmdump)
+- 音訊元數據處理：[atldotnet](https://github.com/Zeugma440/atldotnet)

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Text;
 using ATL;
 using NcmdumpCSharp.Crypto;
@@ -307,7 +308,9 @@ public class NeteaseCrypt : IDisposable
     private FileStream CreateOutputStreamForFirstChunk(ReadOnlySpan<byte> firstChunk, bool useAsync)
     {
         string? fmt = DetectFormat(firstChunk);
-        DumpFilePath = Path.ChangeExtension(DumpFilePath, fmt ?? "flac");
+        // 使用字串串接而非 Path.ChangeExtension，避免檔名中含有 '.' 時
+        // （例如 "[.que] - Teardrops" 或 "(Piano ver.)"）被誤判為副檔名而截斷。
+        DumpFilePath = DumpFilePath + "." + (fmt ?? "flac");
 
         string? outputDir2 = Path.GetDirectoryName(DumpFilePath);
 

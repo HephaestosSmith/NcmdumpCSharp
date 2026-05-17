@@ -1,0 +1,30 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AssemblyTitle>NCM 解密工具</AssemblyTitle>
+    <AssemblyDescription>網易雲音樂 NCM 檔案解密工具（圖形介面版）</AssemblyDescription>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <LangVersion>preview</LangVersion>
+    <RootNamespace>NcmdumpCSharpGui</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="z440.atl.core" Version="7.7.0" />
+  </ItemGroup>
+
+  <!-- 共用核心邏輯（直接連結，避免重複維護） -->
+  <ItemGroup>
+    <Compile Include="..\NcmdumpCSharp\Core\NeteaseCrypt.cs"   Link="Core\NeteaseCrypt.cs" />
+    <Compile Include="..\NcmdumpCSharp\Crypto\AesHelper.cs"    Link="Crypto\AesHelper.cs" />
+    <Compile Include="..\NcmdumpCSharp\Crypto\Base64Helper.cs" Link="Crypto\Base64Helper.cs" />
+    <Compile Include="..\NcmdumpCSharp\Models\NeteaseMusicMetadata.cs" Link="Models\NeteaseMusicMetadata.cs" />
+  </ItemGroup>
+
+</Project>
