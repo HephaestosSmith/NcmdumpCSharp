@@ -756,22 +756,43 @@
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="22" />
                                                                     <ColumnDefinition Width="*" />
-                                                                    <ColumnDefinition Width="72" />
+                                                                    <ColumnDefinition Width="Auto" />
+                                                                    <ColumnDefinition Width="8" />
+                                                                    <ColumnDefinition Width="64" />
                                                                 </Grid.ColumnDefinitions>
                                                                 <CheckBox Grid.Column="0"
                                                                           IsChecked="{Binding IsSelected}"
                                                                           VerticalAlignment="Center"
                                                                           Cursor="Hand" />
                                                                 <StackPanel Grid.Column="1" Margin="6,0,8,0">
-                                                                    <TextBlock Text="{Binding FileName}"
-                                                                               FontSize="12"
-                                                                               Foreground="{StaticResource TextBrush}" />
+                                                                    <StackPanel Orientation="Horizontal">
+                                                                        <TextBlock Text="{Binding FileName}"
+                                                                                   FontSize="12"
+                                                                                   Foreground="{StaticResource TextBrush}" />
+                                                                        <Border Margin="6,1,0,0"
+                                                                                CornerRadius="3"
+                                                                                Background="#E8F5E9"
+                                                                                Padding="4,1"
+                                                                                VerticalAlignment="Center"
+                                                                                Visibility="{Binding IsLargest,
+                                                                                             Converter={StaticResource BoolToVis}}">
+                                                                            <TextBlock Text="★ 保留"
+                                                                                       FontSize="10"
+                                                                                       Foreground="#2E7D32" />
+                                                                        </Border>
+                                                                    </StackPanel>
                                                                     <TextBlock Text="{Binding FolderPath}"
                                                                                FontSize="10"
                                                                                Foreground="{StaticResource SubTextBrush}"
                                                                                TextTrimming="CharacterEllipsis" />
                                                                 </StackPanel>
                                                                 <TextBlock Grid.Column="2"
+                                                                           Text="{Binding DisplayMeta}"
+                                                                           FontSize="11"
+                                                                           Foreground="{StaticResource SubTextBrush}"
+                                                                           HorizontalAlignment="Right"
+                                                                           VerticalAlignment="Center" />
+                                                                <TextBlock Grid.Column="4"
                                                                            Text="{Binding DisplaySize}"
                                                                            FontSize="11"
                                                                            Foreground="{StaticResource SubTextBrush}"

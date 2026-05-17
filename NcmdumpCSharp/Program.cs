@@ -8,44 +8,44 @@ internal static class Program
 {
     private static async Task<int> Main(string[] args)
     {
-        var rootCommand = new RootCommand("网易云音乐NCM文件解密工具 - C#版本");
+        var rootCommand = new RootCommand("網易雲音樂NCM檔案解密工具 - C#版本");
 
-        // 版本选项
+        // 版本選項
         var versionOption = new Option<bool>("--version", "-v")
         {
-            Description = "显示版本信息并退出",
+            Description = "顯示版本資訊並退出",
         };
 
         rootCommand.Options.Add(versionOption);
 
-        // 目录选项
+        // 目錄選項
         var directoryOption = new Option<string?>("--directory", "-d")
         {
-            Description = "处理指定目录下的所有NCM文件",
+            Description = "處理指定目錄下的所有NCM檔案",
         };
 
         rootCommand.Options.Add(directoryOption);
 
-        // 递归选项
+        // 遞迴選項
         var recursiveOption = new Option<bool>("--recursive", "-r")
         {
-            Description = "递归处理子目录",
+            Description = "遞迴處理子目錄",
         };
 
         rootCommand.Options.Add(recursiveOption);
 
-        // 输出目录选项
+        // 輸出目錄選項
         var outputOption = new Option<string?>("--output", "-o")
         {
-            Description = "指定输出目录",
+            Description = "指定輸出目錄",
         };
 
         rootCommand.Options.Add(outputOption);
 
-        // 文件参数
+        // 檔案參數
         var filesArgument = new Argument<string[]>("files")
         {
-            Description = "要处理的NCM文件",
+            Description = "要處理的NCM檔案",
             Arity = ArgumentArity.ZeroOrMore,
         };
 
@@ -81,30 +81,30 @@ internal static class Program
 
     private static void ProcessFiles(string? directory, bool recursive, string? output, string[] files)
     {
-        // === 1. 参数校验 ===
+        // === 1. 參數驗證 ===
         if (string.IsNullOrEmpty(directory) && files.Length == 0)
         {
-            Console.WriteLine("错误: 请指定要处理的文件或目录");
-            Console.WriteLine("使用 --help 查看帮助信息");
+            Console.WriteLine("錯誤：請指定要處理的檔案或目錄");
+            Console.WriteLine("使用 --help 查看說明資訊");
 
             return;
         }
 
         if (recursive && string.IsNullOrEmpty(directory))
         {
-            Console.WriteLine("错误: -r 选项需要配合 -d 选项使用");
+            Console.WriteLine("錯誤：-r 選項需要配合 -d 選項使用");
 
             return;
         }
 
-        // === 2. 输出目录准备 ===
+        // === 2. 輸出目錄準備 ===
         string? outputDir = null;
 
         if (!string.IsNullOrWhiteSpace(output))
         {
             if (File.Exists(output))
             {
-                Console.WriteLine($"错误: '{output}' 不是一个有效的目录");
+                Console.WriteLine($"錯誤：'{output}' 不是有效的目錄");
 
                 return;
             }
@@ -113,17 +113,17 @@ internal static class Program
             outputDir = output;
         }
 
-        // === 3. 收集所有待处理文件 ===
+        // === 3. 收集所有待處理檔案 ===
         var filesToProcess = CollectFiles(directory, recursive, files).ToList();
 
         if (filesToProcess.Count == 0)
         {
-            Console.WriteLine("未找到任何 .ncm 文件");
+            Console.WriteLine("未找到任何 .ncm 檔案");
 
             return;
         }
 
-        // === 4. 逐个处理文件 ===
+        // === 4. 逐個處理檔案 ===
         foreach ((string filePath, string? relativeToBase) in filesToProcess)
         {
             string? targetOutputDir = null;
@@ -146,12 +146,12 @@ internal static class Program
     {
         var list = new List<(string, string?)>();
 
-        // 处理命令行传入的文件
+        // 處理命令列傳入的檔案
         foreach (string file in files)
         {
             if (!File.Exists(file))
             {
-                Console.WriteLine($"警告: 文件 '{file}' 不存在，跳过");
+                Console.WriteLine($"警告：檔案 '{file}' 不存在，跳過");
 
                 continue;
             }
@@ -162,13 +162,13 @@ internal static class Program
             }
         }
 
-        // 处理目录中的文件
+        // 處理目錄中的檔案
         if (string.IsNullOrEmpty(directory))
             return list;
 
         if (!Directory.Exists(directory))
         {
-            Console.WriteLine($"错误: 目录 '{directory}' 不存在");
+            Console.WriteLine($"錯誤：目錄 '{directory}' 不存在");
 
             return list;
         }
@@ -195,7 +195,7 @@ internal static class Program
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[错误] 处理文件 '{filePath}' 时发生异常: {ex.Message}");
+            Console.WriteLine($"[錯誤] 處理檔案 '{filePath}' 時發生例外：{ex.Message}");
         }
     }
 }

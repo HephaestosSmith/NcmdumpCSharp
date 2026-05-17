@@ -15,10 +15,24 @@ namespace NcmdumpCSharpGui.ViewModels;
 // ── 單一重複檔案條目 ────────────────────────────────────────────
 public class DuplicateFileItem : INotifyPropertyChanged
 {
-    public string FilePath    { get; init; } = string.Empty;
-    public string FileName    => Path.GetFileName(FilePath);
-    public string DisplaySize { get; init; } = string.Empty;
-    public string FolderPath  => Path.GetDirectoryName(FilePath) ?? string.Empty;
+    public string FilePath       { get; init; } = string.Empty;
+    public string FileName       => Path.GetFileName(FilePath);
+    public long   FileSize       { get; init; }
+    public string DisplaySize    { get; init; } = string.Empty;
+    public string DisplayBitrate { get; init; } = string.Empty;
+    public string DisplayFormat  { get; init; } = string.Empty;
+    public bool   IsLargest      { get; init; }
+    public string FolderPath     => Path.GetDirectoryName(FilePath) ?? string.Empty;
+
+    /// <summary>格式與位元率的組合顯示字串，例如「FLAC · 320 kbps」</summary>
+    public string DisplayMeta =>
+        (DisplayFormat, DisplayBitrate) switch
+        {
+            ({ Length: > 0 }, { Length: > 0 }) => $"{DisplayFormat} · {DisplayBitrate}",
+            ({ Length: > 0 }, _)               => DisplayFormat,
+            (_, { Length: > 0 })               => DisplayBitrate,
+            _                                  => string.Empty
+        };
 
     private bool _isSelected;
     public bool IsSelected
@@ -242,48 +256,53 @@ public partial class DuplicateScanViewModel : INotifyPropertyChanged
     }
 
     // ── 核心演算法 ───────────────────────────────────────────────
+    private record FileEntry(
+        string FilePath, long Size, int Bitrate, string Format, string Key, string Label);
+
     private static List<DuplicateGroupViewModel> FindDuplicates(string folder)
     {
         var files = Directory.EnumerateFiles(folder, "*.*", SearchOption.AllDirectories)
             .Where(f => AudioExts.Contains(Path.GetExtension(f)))
             .ToList();
 
-        var keyToFiles = new Dictionary<string, List<string>>(StringComparer.OrdinalIgnoreCase);
-        var keyToLabel = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+        // key → (條目清單, 群組標籤)
+        var groups = new Dictionary<string, (List<FileEntry> Entries, string Label)>(
+            StringComparer.OrdinalIgnoreCase);
 
         foreach (var file in files)
         {
-            var (key, label) = GetFileKeyAndLabel(file);
-            if (!keyToFiles.TryGetValue(key, out var list))
+            var entry = BuildFileEntry(file);
+            if (!groups.TryGetValue(entry.Key, out var bucket))
             {
-                list = new List<string>();
-                keyToFiles[key] = list;
-                keyToLabel[key] = label;
+                bucket = (new List<FileEntry>(), entry.Label);
+                groups[entry.Key] = bucket;
             }
-            list.Add(file);
+            bucket.Entries.Add(entry);
         }
 
         var result = new List<DuplicateGroupViewModel>();
-        foreach (var kvp in keyToFiles)
+        foreach (var kvp in groups)
         {
-            if (kvp.Value.Count < 2) continue;
+            if (kvp.Value.Entries.Count < 2) continue;
 
-            var g = new DuplicateGroupViewModel { GroupLabel = keyToLabel[kvp.Key] };
+            var g = new DuplicateGroupViewModel { GroupLabel = kvp.Value.Label };
 
-            // 沒有 (N) 後綴的檔案排前面（可能是「原始檔案」）
-            var sorted = kvp.Value
-                .OrderBy(f => HasNumberSuffix(Path.GetFileNameWithoutExtension(f)) ? 1 : 0)
-                .ThenBy(f => Path.GetFileName(f), StringComparer.OrdinalIgnoreCase)
-                .ToList();
+            // 以檔案大小降冪排列，最大的排第一（優先保留）
+            var sorted = kvp.Value.Entries.OrderByDescending(e => e.Size).ToList();
 
-            foreach (var file in sorted)
+            for (int i = 0; i < sorted.Count; i++)
             {
+                var e = sorted[i];
                 g.Items.Add(new DuplicateFileItem
                 {
-                    FilePath    = file,
-                    DisplaySize = FormatSize(new FileInfo(file).Length),
-                    // 預設勾選：檔名帶有 (N) 序號的為疑似副本
-                    IsSelected  = HasNumberSuffix(Path.GetFileNameWithoutExtension(file))
+                    FilePath       = e.FilePath,
+                    FileSize       = e.Size,
+                    DisplaySize    = FormatSize(e.Size),
+                    DisplayBitrate = e.Bitrate > 0 ? $"{e.Bitrate} kbps" : string.Empty,
+                    DisplayFormat  = e.Format,
+                    IsLargest      = i == 0,
+                    // 最大的（第一個）預設不勾選；其餘預設勾選為待刪除
+                    IsSelected     = i != 0
                 });
             }
 
@@ -294,35 +313,40 @@ public partial class DuplicateScanViewModel : INotifyPropertyChanged
     }
 
     /// <summary>
-    /// 取得檔案的群組 key 及顯示標籤。
-    /// 優先讀取 ATL 嵌入標籤（歌名＋歌手），無標籤時改用去除序號後綴的檔名。
+    /// 讀取檔案的音訊 metadata，建構群組比對用的 FileEntry（一次 ATL 呼叫）。
+    /// 優先讀取嵌入標籤（歌名＋歌手），無標籤時改用去除序號後綴的檔名。
     /// </summary>
-    private static (string key, string label) GetFileKeyAndLabel(string filePath)
+    private static FileEntry BuildFileEntry(string filePath)
     {
+        long   size    = new FileInfo(filePath).Length;
+        int    bitrate = 0;
+        string format  = Path.GetExtension(filePath).TrimStart('.').ToUpperInvariant();
+
         try
         {
-            var track  = new Track(filePath);
+            var track = new Track(filePath);
             string title  = (track.Title  ?? "").Trim();
             string artist = (track.Artist ?? "").Trim();
+            if (track.Bitrate > 0) bitrate = track.Bitrate;
 
             if (!string.IsNullOrEmpty(title) && !string.IsNullOrEmpty(artist))
-                return ($"META:{title.ToLowerInvariant()}|{artist.ToLowerInvariant()}",
-                        $"🎵 {title}  ·  🎤 {artist}");
+                return new FileEntry(filePath, size, bitrate, format,
+                    $"META:{title.ToLowerInvariant()}|{artist.ToLowerInvariant()}",
+                    $"🎵 {title}  ·  🎤 {artist}");
 
             if (!string.IsNullOrEmpty(title))
-                return ($"TITLE:{title.ToLowerInvariant()}",
-                        $"🎵 {title}");
+                return new FileEntry(filePath, size, bitrate, format,
+                    $"TITLE:{title.ToLowerInvariant()}",
+                    $"🎵 {title}");
         }
         catch { /* ATL 讀取失敗，改用檔名判斷 */ }
 
         string stem    = Path.GetFileNameWithoutExtension(filePath);
         string cleaned = NumberSuffixRegex().Replace(stem, "").Trim();
-        return ($"FILE:{cleaned.ToLowerInvariant()}",
-                $"📄 {cleaned}");
+        return new FileEntry(filePath, size, bitrate, format,
+            $"FILE:{cleaned.ToLowerInvariant()}",
+            $"📄 {cleaned}");
     }
-
-    private static bool HasNumberSuffix(string stem)
-        => NumberSuffixRegex().IsMatch(stem);
 
     private static string FormatSize(long bytes) => bytes switch
     {

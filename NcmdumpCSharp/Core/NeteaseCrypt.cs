@@ -7,11 +7,11 @@ using NcmdumpCSharp.Models;
 namespace NcmdumpCSharp.Core;
 
 /// <summary>
-///     网易云音乐NCM文件解密器
+///     網易雲音樂NCM檔案解密器
 /// </summary>
 public class NeteaseCrypt : IDisposable
 {
-    // 固定的密钥
+    // 固定的金鑰
     private static readonly byte[] _coreKey = "hzHRAmso5kInbaxW"u8.ToArray();
     private static readonly byte[] _modifyKey = "#14ljk_!\\]&0U<'("u8.ToArray();
     private static readonly byte[] _pngHeader = [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A];
@@ -21,9 +21,9 @@ public class NeteaseCrypt : IDisposable
     private FileStream? _fileStream;
 
     /// <summary>
-    ///     构造函数
+    ///     建構函式
     /// </summary>
-    /// <param name="filePath">NCM文件路径</param>
+    /// <param name="filePath">NCM檔案路徑</param>
     public NeteaseCrypt(string filePath)
     {
         _filePath = filePath;
@@ -31,23 +31,23 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     解析自 NCM 的元数据对象（标题、艺术家、专辑、格式等）。
-    ///     初始化时从 NCM 头读取；在解密首个音频块时如未确定 Format 将补全。
+    ///     解析自 NCM 的元數據物件（標題、藝術家、專輯、格式等）。
+    ///     初始化時從 NCM 標頭讀取；在解密首個音訊區塊時如未確定 Format 將補全。
     /// </summary>
     public NeteaseMusicMetadata? Metadata { get; private set; }
 
     /// <summary>
-    ///     专辑封面二进制数据（JPEG 或 PNG），可在 <see cref="FixMetadata" /> 时写入音频标签。
+    ///     專輯封面二進位資料（JPEG 或 PNG），可在 <see cref="FixMetadata" /> 時寫入音訊標籤。
     /// </summary>
     public byte[]? ImageData { get; private set; }
 
     /// <summary>
-    ///     获取输出文件路径
+    ///     取得輸出檔案路徑
     /// </summary>
     public string DumpFilePath { get; private set; } = string.Empty;
 
     /// <summary>
-    ///     释放资源
+    ///     釋放資源
     /// </summary>
     public void Dispose()
     {
@@ -62,32 +62,32 @@ public class NeteaseCrypt : IDisposable
     {
         if (!File.Exists(_filePath))
         {
-            throw new FileNotFoundException($"文件不存在: {_filePath}");
+            throw new FileNotFoundException($"檔案不存在：{_filePath}");
         }
 
         _fileStream = File.OpenRead(_filePath);
 
         if (!IsNcmFile())
         {
-            throw new InvalidOperationException("不是有效的网易云音乐NCM文件");
+            throw new InvalidOperationException("不是有效的網易雲音樂NCM檔案");
         }
 
-        // 跳过文件头
+        // 跳過檔案標頭
         _fileStream.Seek(2, SeekOrigin.Current);
 
-        // 读取密钥数据长度
+        // 讀取金鑰資料長度
         int keyDataLength = ReadInt32();
 
         if (keyDataLength <= 0)
         {
-            throw new InvalidOperationException("损坏的NCM文件");
+            throw new InvalidOperationException("損壞的NCM檔案");
         }
 
-        // 读取密钥数据
+        // 讀取金鑰資料
         byte[] keyData = new byte[keyDataLength];
         ReadBytes(keyData, 0, keyDataLength);
 
-        // 异或解密
+        // 異或解密
         for (int i = 0; i < keyDataLength; i++)
         {
             keyData[i] ^= 0x64;
@@ -99,16 +99,16 @@ public class NeteaseCrypt : IDisposable
         // 构建密钥盒
         BuildKeyBox(decryptedKeyData, 17, decryptedKeyData.Length - 17);
 
-        // 读取元数据长度
+        // 讀取元數據長度
         int metadataLength = ReadInt32();
 
         if (metadataLength > 0)
         {
-            // 读取元数据
+            // 讀取元數據
             byte[] modifyData = new byte[metadataLength];
             ReadBytes(modifyData, 0, metadataLength);
 
-            // 异或解密
+            // 異或解密
             for (int i = 0; i < metadataLength; i++)
             {
                 modifyData[i] ^= 0x63;
@@ -117,7 +117,7 @@ public class NeteaseCrypt : IDisposable
             // 跳过"163 key(Don'\''t modify):"
             string swapModifyData = Encoding.UTF8.GetString(modifyData, 22, modifyData.Length - 22);
 
-            // Base64解码
+            // Base64解碼
             byte[] modifyOutData = Base64Helper.Decode(swapModifyData);
 
             // AES解密
@@ -129,10 +129,10 @@ public class NeteaseCrypt : IDisposable
             Metadata = NeteaseMusicMetadata.FromJson(jsonData);
         }
 
-        // 跳过CRC32和图片版本
+        // 跳過CRC32及圖片版本
         _fileStream.Seek(5, SeekOrigin.Current);
 
-        // 读取封面长度
+        // 讀取封面長度
         int coverFrameLength = ReadInt32();
         int imageLength = ReadInt32();
 
@@ -142,12 +142,12 @@ public class NeteaseCrypt : IDisposable
             ReadBytes(ImageData, 0, imageLength);
         }
 
-        // 跳过剩余的封面数据
+        // 跳過剩餘的封面資料
         _fileStream.Seek(coverFrameLength - imageLength, SeekOrigin.Current);
     }
 
     /// <summary>
-    ///     检查是否为NCM文件
+    ///     檢查是否為NCM檔案
     /// </summary>
     private bool IsNcmFile()
     {
@@ -158,11 +158,11 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     构建密钥盒
+    ///     建構金鑰盒
     /// </summary>
     private void BuildKeyBox(byte[] key, int keyOffset, int keyLength)
     {
-        // 初始化密钥盒
+        // 初始化金鑰盒
         for (int i = 0; i < 256; i++)
         {
             _keyBox[i] = (byte)i;
@@ -187,7 +187,7 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     读取4字节整数
+    ///     讀取4位元組整數
     /// </summary>
     private int ReadInt32()
     {
@@ -198,23 +198,23 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     读取字节数组
+    ///     讀取位元組陣列
     /// </summary>
     private void ReadBytes(byte[] buffer, int offset, int count)
     {
         if (_fileStream == null)
-            throw new InvalidOperationException("文件流未初始化");
+            throw new InvalidOperationException("檔案串流未初始化");
 
         int bytesRead = _fileStream.Read(buffer, offset, count);
 
         if (bytesRead != count)
         {
-            throw new InvalidOperationException("读取文件失败");
+            throw new InvalidOperationException("讀取檔案失敗");
         }
     }
 
     /// <summary>
-    ///     获取MIME类型
+    ///     取得MIME類型
     /// </summary>
     public static string GetMimeType(byte[] data)
     {
@@ -227,10 +227,10 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     使用密钥盒对缓冲区执行 RC4 异或解密，并推进解密位置。
+    ///     使用金鑰盒對緩衝區執行 RC4 異或解密，並推進解密位置。
     /// </summary>
-    /// <param name="buffer">就地解密的数据缓冲区</param>
-    /// <param name="position">文件内偏移位置（将被按已处理字节数递增）</param>
+    /// <param name="buffer">就地解密的資料緩衝區</param>
+    /// <param name="position">檔案內偏移位置（將被按已處理位元組數遞增）</param>
     private void Rc4Xor(Span<byte> buffer, ref long position)
     {
         for (int i = 0; i < buffer.Length; i++)
@@ -243,10 +243,10 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     从首块数据前缀判断音频格式（mp3/flac），无法识别时返回 null。
+    ///     從首塊資料前綴判斷音訊格式（mp3/flac），無法辨識時返回 null。
     /// </summary>
-    /// <param name="buffer">首块数据的只读切片</param>
-    /// <returns>文件扩展名（不含点），或 null</returns>
+    /// <param name="buffer">首塊資料的唯讀切片</param>
+    /// <returns>檔案副檔名（不含點），或 null</returns>
     private static string? DetectFormat(ReadOnlySpan<byte> buffer)
     {
         return buffer.Length switch
@@ -261,9 +261,9 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     准备基础输出路径（不含扩展名），用于 Dump/DumpAsync。
+    ///     準備基礎輸出路徑（不含副檔名），用於 Dump/DumpAsync。
     /// </summary>
-    /// <param name="outputDir">可选的输出目录；为空时与源文件同目录</param>
+    /// <param name="outputDir">可選的輸出目錄；為空時與來源檔案同目錄</param>
     private void PrepareDumpBasePath(string? outputDir)
     {
         if (string.IsNullOrEmpty(outputDir))
@@ -278,11 +278,11 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     对数据块做 RC4 解密，并在首个数据块时检测音频格式（设置 <see cref="NeteaseMusicMetadata.Format" />）。
+    ///     對資料區塊做 RC4 解密，並在首個資料區塊時偵測音訊格式（設定 <see cref="NeteaseMusicMetadata.Format" />）。
     /// </summary>
-    /// <param name="span">待就地解密的数据块</param>
-    /// <param name="position">文件内偏移位置（将被按已处理字节数递增）</param>
-    /// <param name="firstChunk">是否为首个数据块（调用内维护并在首次后置为 false）</param>
+    /// <param name="span">待就地解密的資料區塊</param>
+    /// <param name="position">檔案內偏移位置（將被按已處理位元組數遞增）</param>
+    /// <param name="firstChunk">是否為首個資料區塊（呼叫內維護並在首次後置為 false）</param>
     private void DecryptAndMaybeDetectFormat(Span<byte> span, ref long position, ref bool firstChunk)
     {
         Rc4Xor(span, ref position);
@@ -300,11 +300,11 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     基于首块数据确定最终输出路径（含扩展名）并创建输出流。
+    ///     基於首塊資料確定最終輸出路徑（含副檔名）並建立輸出串流。
     /// </summary>
-    /// <param name="firstChunk">首块数据，用于格式检测</param>
-    /// <param name="useAsync">是否以异步写入模式打开文件流</param>
-    /// <returns>已创建的文件写入流</returns>
+    /// <param name="firstChunk">首塊資料，用於格式偵測</param>
+    /// <param name="useAsync">是否以非同步寫入模式開啟檔案串流</param>
+    /// <returns>已建立的檔案寫入串流</returns>
     private FileStream CreateOutputStreamForFirstChunk(ReadOnlySpan<byte> firstChunk, bool useAsync)
     {
         string? fmt = DetectFormat(firstChunk);
@@ -323,9 +323,9 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     解密并将音频写入到文件（同步）。
+    ///     解密並將音訊寫入至檔案（同步）。
     /// </summary>
-    /// <param name="outputDir">可选的输出目录；为空时默认写入到源文件同目录</param>
+    /// <param name="outputDir">可選的輸出目錄；為空時預設寫入至來源檔案同目錄</param>
     public void Dump(string? outputDir = null)
     {
         PrepareDumpBasePath(outputDir);
@@ -356,14 +356,14 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     修复输出音频文件的元数据（标题/艺术家/专辑/封面）。
+    ///     修復輸出音訊檔案的元數據（標題/藝術家/專輯/封面）。
     /// </summary>
-    /// <exception cref="InvalidOperationException">当输出文件不存在或路径为空时抛出</exception>
+    /// <exception cref="InvalidOperationException">當輸出檔案不存在或路徑為空時拋出</exception>
     public void FixMetadata()
     {
         if (string.IsNullOrEmpty(DumpFilePath) || !File.Exists(DumpFilePath))
         {
-            throw new InvalidOperationException("输出文件不存在");
+            throw new InvalidOperationException("輸出檔案不存在");
         }
 
         try
@@ -377,11 +377,11 @@ public class NeteaseCrypt : IDisposable
             tag.Artist = Metadata.Artist;
             tag.Album = Metadata.Album;
 
-            // 添加封面图片
+            // 添加封面圖片
             if (ImageData is { Length: > 0 })
             {
                 var picture = PictureInfo.fromBinaryData(ImageData, PictureInfo.PIC_TYPE.Front);
-                tag.EmbeddedPictures.Clear(); // 可选：清空已有封面
+                tag.EmbeddedPictures.Clear(); // 可選：清空已有封面
                 tag.EmbeddedPictures.Add(picture);
             }
 
@@ -389,14 +389,14 @@ public class NeteaseCrypt : IDisposable
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"[警告] 修复元数据失败: {ex.Message}");
+            Console.WriteLine($"[警告] 修復元數據失敗：{ex.Message}");
         }
     }
 
     /// <summary>
-    ///     解密音频数据到内存流（同步）。
+    ///     解密音訊資料至記憶體串流（同步）。
     /// </summary>
-    /// <returns>包含解密后音频数据的内存流（Position 已重置为0）；当文件流未初始化时返回 null</returns>
+    /// <returns>包含解密後音訊資料的記憶體串流（Position 已重置為0）；當檔案串流未初始化時返回 null</returns>
     public MemoryStream? DumpToStream()
     {
         if (_fileStream == null)
@@ -423,9 +423,9 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     解密音频数据到内存流（异步）。
+    ///     解密音訊資料至記憶體串流（非同步）。
     /// </summary>
-    /// <returns>包含解密后音频数据的内存流（Position 已重置为0）；当文件流未初始化时返回 null</returns>
+    /// <returns>包含解密後音訊資料的記憶體串流（Position 已重置為0）；當檔案串流未初始化時返回 null</returns>
     public async Task<MemoryStream?> DumpToStreamAsync()
     {
         if (_fileStream == null)
@@ -452,9 +452,9 @@ public class NeteaseCrypt : IDisposable
     }
 
     /// <summary>
-    ///     解密并将音频写入到文件（异步）。
+    ///     解密並將音訊寫入至檔案（非同步）。
     /// </summary>
-    /// <param name="outputDir">可选的输出目录；为空时默认写入到源文件同目录</param>
+    /// <param name="outputDir">可選的輸出目錄；為空時預設寫入至來源檔案同目錄</param>
     public async Task DumpAsync(string? outputDir = null)
     {
         PrepareDumpBasePath(outputDir);

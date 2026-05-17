@@ -1,3 +1,4 @@
+using ATL;
 using NcmdumpCSharp.Core;
 using NcmdumpCSharpGui.Models;
 
@@ -154,6 +155,10 @@ public class DecryptionService
             // 將翻譯後的標籤嵌入音訊檔案
             crypt.FixMetadata();
 
+            // 翻譯輸出檔案的所有嵌入標籤（含音訊串流原有的其他欄位）
+            if (options.TranslateToTraditional)
+                TranslateFileTags(crypt.DumpFilePath);
+
             // 重新命名輸出檔案為繁體中文檔名
             string finalPath = crypt.DumpFilePath;
             if (options.TranslateToTraditional)
@@ -195,6 +200,10 @@ public class DecryptionService
             string destPath = Path.Combine(outputDir, destName);
             File.Copy(filePath, destPath, overwrite: true);
 
+            // 翻譯複製檔案的嵌入標籤（標題、歌手、專輯等）
+            if (options.TranslateToTraditional)
+                TranslateFileTags(destPath);
+
             return new LogEntry
             {
                 Message = $"↷  {destName}  （已複製）",
@@ -212,6 +221,67 @@ public class DecryptionService
                 Message = $"✗  {Path.GetFileName(filePath)}  —  {ex.Message}",
                 Level   = LogLevel.錯誤
             };
+        }
+    }
+
+    /// <summary>
+    /// 讀取音訊檔案的嵌入標籤，將所有文字欄位
+    /// 從簡體中文轉換為繁體中文後存回檔案。
+    /// 不支援標籤的格式（或標籤全為空）會直接略過。
+    /// </summary>
+    private static void TranslateFileTags(string filePath)
+    {
+        try
+        {
+            var tag = new Track(filePath);
+
+            bool changed = false;
+
+            string? t(string? s)
+            {
+                if (string.IsNullOrEmpty(s)) return s;
+                string converted = ChineseConverter.ToTraditional(s);
+                if (converted != s) changed = true;
+                return converted;
+            }
+
+            tag.Title          = t(tag.Title);
+            tag.Artist         = t(tag.Artist);
+            tag.Album          = t(tag.Album);
+            tag.AlbumArtist    = t(tag.AlbumArtist);
+            tag.Composer       = t(tag.Composer);
+            tag.Comment        = t(tag.Comment);
+            tag.Description    = t(tag.Description);
+            tag.Copyright      = t(tag.Copyright);
+            tag.Publisher      = t(tag.Publisher);
+            tag.OriginalArtist = t(tag.OriginalArtist);
+            tag.OriginalAlbum  = t(tag.OriginalAlbum);
+            tag.Conductor      = t(tag.Conductor);
+            tag.Lyricist       = t(tag.Lyricist);
+
+            // 內嵌歌詞（含時間軸歌詞的文字部分）
+            if (tag.Lyrics.Count > 0)
+            {
+                foreach (var lyric in tag.Lyrics)
+                {
+                    if (!string.IsNullOrEmpty(lyric.UnsynchronizedLyrics))
+                    {
+                        string converted = ChineseConverter.ToTraditional(lyric.UnsynchronizedLyrics);
+                        if (converted != lyric.UnsynchronizedLyrics)
+                        {
+                            lyric.UnsynchronizedLyrics = converted;
+                            changed = true;
+                        }
+                    }
+                }
+            }
+
+            if (changed)
+                tag.Save();
+        }
+        catch
+        {
+            // 無法讀寫標籤時靜默略過，不影響複製結果
         }
     }
 

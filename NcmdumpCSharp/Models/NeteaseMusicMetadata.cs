@@ -3,7 +3,7 @@ using System.Text.Json;
 namespace NcmdumpCSharp.Models;
 
 /// <summary>
-///     网易云音乐元数据
+///     網易雲音樂元數據
 /// </summary>
 public class NeteaseMusicMetadata
 {
@@ -20,10 +20,10 @@ public class NeteaseMusicMetadata
     public int Bitrate { get; set; }
 
     /// <summary>
-    ///     从JSON字符串解析元数据
+    ///     從 JSON字串解析元數據
     /// </summary>
-    /// <param name="jsonString">JSON字符串</param>
-    /// <returns>元数据对象</returns>
+    /// <param name="jsonString">JSON字串</param>
+    /// <returns>元數據物件</returns>
     public static NeteaseMusicMetadata? FromJson(string jsonString)
     {
         try
