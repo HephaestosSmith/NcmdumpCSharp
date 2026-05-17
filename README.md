@@ -1,6 +1,6 @@
-﻿# NcmdumpCSharp
+﻿# NcmdumpGUI (Create By Claude Sonnet 4.6 High)
 
-網易雲音樂 NCM 檔案解密工具 — GUI 版本(Create By Claude Sonnet 4.6 High)
+網易雲音樂 NCM 檔案解密工具 — GUI 版本
 
 ## 簡介
 
