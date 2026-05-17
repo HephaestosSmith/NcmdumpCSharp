@@ -1,6 +1,6 @@
 ﻿# NcmdumpCSharp
 
-網易雲音樂 NCM 檔案解密工具 — C# 版本
+網易雲音樂 NCM 檔案解密工具 — GUI 版本(Create By Claude Sonnet 4.6 High)
 
 ## 簡介
 
@@ -50,7 +50,7 @@ dotnet publish NcmdumpCSharpGui -c Release -o publish
 
 ### 下載預編譯版本
 
-前往 [Releases](https://github.com/Mioter/NcmdumpCSharp/releases) 頁面下載對應平台的預編譯版本（如有提供）。
+前往 [Releases](https://github.com/HephaestosSmith/NcmdumpCSharp/releases) 頁面下載對應平台的預編譯版本（如有提供）。
 
 ## 使用方式
 
@@ -168,5 +168,4 @@ NcmdumpCSharpGui/           ← WPF 圖形介面
 
 ## 致謝
 
-- 原 C++ 版本作者：[taurusxin/ncmdump](https://github.com/taurusxin/ncmdump)
-- 音訊元數據處理：[atldotnet](https://github.com/Zeugma440/atldotnet)
+- 原版本作者：[Mioter/NcmdumpCSharp](https://github.com/Mioter/NcmdumpCSharp)
